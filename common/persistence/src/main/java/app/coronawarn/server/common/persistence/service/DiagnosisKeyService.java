@@ -21,6 +21,7 @@
 package app.coronawarn.server.common.persistence.service;
 
 import static app.coronawarn.server.common.persistence.domain.validation.ValidSubmissionTimestampValidator.SECONDS_PER_HOUR;
+import static java.lang.Boolean.TRUE;
 import static java.time.ZoneOffset.UTC;
 import static org.springframework.data.util.StreamUtils.createStreamFromIterator;
 
@@ -53,23 +54,33 @@ public class DiagnosisKeyService {
   }
 
   /**
-   * Persists the specified collection of {@link DiagnosisKey} instances. If the key data of a particular diagnosis key
-   * already exists in the database, this diagnosis key is not persisted.
+   * Persists the specified collection of {@link DiagnosisKey} instances and returns the number of inserted diagnosis
+   * keys. If the key data of a particular diagnosis key already exists in the database, this diagnosis key is not
+   * persisted.
    *
    * @param diagnosisKeys must not contain {@literal null}.
+   * @return Number of successfully inserted diagnosis keys.
    * @throws IllegalArgumentException in case the given collection contains {@literal null}.
    */
   @Timed
   @Transactional
-  public void saveDiagnosisKeys(Collection<DiagnosisKey> diagnosisKeys) {
+  public int saveDiagnosisKeys(Collection<DiagnosisKey> diagnosisKeys) {
+    int rowCount = 0;
+
     for (DiagnosisKey diagnosisKey : diagnosisKeys) {
-      keyRepository.saveDoNothingOnConflict(
+      Boolean result = keyRepository.saveDoNothingOnConflict(
           diagnosisKey.getKeyData(), diagnosisKey.getRollingStartIntervalNumber(), diagnosisKey.getRollingPeriod(),
           diagnosisKey.getSubmissionTimestamp(), diagnosisKey.getTransmissionRiskLevel(),
           diagnosisKey.getOriginCountry(), diagnosisKey.getVisitedCountries().toArray(new String[0]),
           diagnosisKey.getReportType().name(), diagnosisKey.getDaysSinceOnsetOfSymptoms(),
           diagnosisKey.isConsentToFederation());
+
+      if (TRUE.equals(result)) {
+        rowCount++;
+      }
     }
+
+    return rowCount;
   }
 
   /**
