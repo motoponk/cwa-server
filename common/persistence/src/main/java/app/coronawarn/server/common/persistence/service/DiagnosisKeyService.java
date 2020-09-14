@@ -80,6 +80,11 @@ public class DiagnosisKeyService {
       }
     }
 
+    if (rowCount != diagnosisKeys.size()) {
+      logger.warn("{} out of {} diagnosis keys conflicted with existing database entries and were ignored.",
+          (diagnosisKeys.size() - rowCount), diagnosisKeys.size());
+    }
+
     return rowCount;
   }
 
